@@ -2040,7 +2040,7 @@ static void mxc_hdmi_set_mode(struct mxc_hdmi *hdmi, int edid_status)
 	} else {
 		fb_var_to_videomode(&m, &var);
 		dump_fb_videomode(&m);
-		mode = mxc_fb_find_nearest_mode(&m, &hdmi->fbi->modelist, false);
+		mode = fb_find_nearest_mode(&m, &hdmi->fbi->modelist);
 	}
 
 	if (!mode) {

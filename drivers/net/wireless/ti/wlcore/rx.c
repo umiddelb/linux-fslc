@@ -74,7 +74,14 @@ static void wl1271_rx_status(struct wl1271 *wl,
 	if (desc->rate <= wl->hw_min_ht_rate)
 		status->flag |= RX_FLAG_HT;
 
-	status->signal = desc->rssi;
+	/*
+	* Read the signal level and antenna diversity indication.
+	* The msb in the signal level is always set as it is a
+	* negative number.
+	* The antenna indication is the msb of the rssi.
+	*/
+	status->signal = ((desc->rssi & RSSI_LEVEL_BITMASK) | BIT(7));
+	status->antenna = ((desc->rssi & ANT_DIVERSITY_BITMASK) >> 7);
 
 	/*
 	 * FIXME: In wl1251, the SNR should be divided by two.  In wl1271 we
@@ -203,9 +210,9 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 	return is_data;
 }
 
-int wlcore_rx(struct wl1271 *wl, struct wl_fw_status_1 *status)
+int wlcore_rx(struct wl1271 *wl, struct wl_fw_status *status)
 {
-	unsigned long active_hlids[BITS_TO_LONGS(WL12XX_MAX_LINKS)] = {0};
+	unsigned long active_hlids[BITS_TO_LONGS(WLCORE_MAX_LINKS)] = {0};
 	u32 buf_size;
 	u32 fw_rx_counter = status->fw_rx_counter % wl->num_rx_desc;
 	u32 drv_rx_counter = wl->rx_counter % wl->num_rx_desc;
@@ -263,12 +270,12 @@ int wlcore_rx(struct wl1271 *wl, struct wl_fw_status_1 *status)
 						  wl->aggr_buf + pkt_offset,
 						  pkt_len, rx_align,
 						  &hlid) == 1) {
-				if (hlid < WL12XX_MAX_LINKS)
+				if (hlid < wl->num_links)
 					__set_bit(hlid, active_hlids);
 				else
 					WARN(1,
-					     "hlid exceeded WL12XX_MAX_LINKS "
-					     "(%d)\n", hlid);
+					     "hlid (%d) exceeded MAX_LINKS\n",
+					     hlid);
 			}
 
 			wl->rx_counter++;

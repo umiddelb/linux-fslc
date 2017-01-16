@@ -1403,7 +1403,6 @@ static const struct dev_pm_ops bh1770_pm_ops = {
 static struct i2c_driver bh1770_driver = {
 	.driver	 = {
 		.name	= "bh1770glc",
-		.owner	= THIS_MODULE,
 		.pm	= &bh1770_pm_ops,
 	},
 	.probe	  = bh1770_probe,

@@ -47,6 +47,7 @@ static u32 ddr_test_region = 0, test_region_size = SZ_2M;
 struct imx6_pcie {
 	int			reset_gpio;
 	int			power_on_gpio;
+	bool			gpio_active_high;
 	struct clk		*pcie_bus;
 	struct clk		*pcie_phy;
 	struct clk		*pcie_inbound_axi;
@@ -56,6 +57,7 @@ struct imx6_pcie {
 	struct regmap		*iomuxc_gpr;
 	struct regulator	*pcie_phy_regulator;
 	void __iomem		*mem_base;
+	int			link_gen;
 };
 
 /* PCIe Root Complex registers (memory-mapped) */
@@ -360,9 +362,11 @@ static int imx6_pcie_deassert_core_reset(struct pcie_port *pp)
 
 	/* Some boards don't have PCIe reset GPIO. */
 	if (gpio_is_valid(imx6_pcie->reset_gpio)) {
-		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 0);
+		gpio_set_value_cansleep(imx6_pcie->reset_gpio,
+					imx6_pcie->gpio_active_high);
 		mdelay(100);
-		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 1);
+		gpio_set_value_cansleep(imx6_pcie->reset_gpio,
+					!imx6_pcie->gpio_active_high);
 	}
 
 	/*
@@ -491,11 +495,15 @@ static int imx6_pcie_start_link(struct pcie_port *pp)
 	if (ret)
 		goto out;
 
-	/* Allow Gen2 mode after the link is up. */
-	tmp = readl(pp->dbi_base + PCIE_RC_LCR);
-	tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
-	tmp |= PCIE_RC_LCR_MAX_LINK_SPEEDS_GEN2;
-	writel(tmp, pp->dbi_base + PCIE_RC_LCR);
+	if (imx6_pcie->link_gen == 2) {
+		/* Allow Gen2 mode after the link is up. */
+		tmp = readl(pp->dbi_base + PCIE_RC_LCR);
+		tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
+		tmp |= PCIE_RC_LCR_MAX_LINK_SPEEDS_GEN2;
+		writel(tmp, pp->dbi_base + PCIE_RC_LCR);
+	} else {
+		dev_info(pp->dev, "Link: Gen2 disabled\n");
+	}
 
 	/*
 	 * Start Directed Speed Change so the best possible speed both link
@@ -544,7 +552,7 @@ out:
 		release_bus_freq(BUS_FREQ_HIGH);
 	} else {
 		tmp = readl(pp->dbi_base + 0x80);
-		dev_dbg(pp->dev, "Link up, Gen=%i\n", (tmp >> 16) & 0xf);
+		dev_info(pp->dev, "Link up, Gen=%i\n", (tmp >> 16) & 0xf);
 	}
 
 	return ret;
@@ -1045,9 +1053,14 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
 
 	/* Fetch GPIOs */
 	imx6_pcie->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
+	imx6_pcie->gpio_active_high = of_property_read_bool(np,
+						"reset-gpio-active-high");
 	if (gpio_is_valid(imx6_pcie->reset_gpio)) {
 		ret = devm_gpio_request_one(&pdev->dev, imx6_pcie->reset_gpio,
-					    GPIOF_OUT_INIT_LOW, "PCIe reset");
+				imx6_pcie->gpio_active_high ?
+					GPIOF_OUT_INIT_HIGH :
+					GPIOF_OUT_INIT_LOW,
+				"PCIe reset");
 		if (ret) {
 			dev_err(&pdev->dev, "unable to get reset gpio\n");
 			return ret;
@@ -1255,6 +1268,12 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
 			pr_info("pcie ep: Data transfer is failed.\n");
 		} /* end of self io test. */
 	} else {
+		/* Limit link speed */
+		ret = of_property_read_u32(pp->dev->of_node, "fsl,max-link-speed",
+					   &imx6_pcie->link_gen);
+       		if (ret)
+			imx6_pcie->link_gen = 1;
+
 		ret = imx6_add_pcie_port(pp, pdev);
 		if (ret < 0)
 			goto err;

@@ -40,8 +40,8 @@
  *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  *     OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "imx6qdl-microsom.dtsi"
-#include "imx6qdl-microsom-ar8035.dtsi"
+#include "imx6qdl-solidrun-microsom.dtsi"
+#include "imx6qdl-solidrun-microsom-ar8035.dtsi"
 
 / {
 	aliases {

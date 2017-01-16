@@ -48,36 +48,29 @@ enum {
 	WL12XX_TCXOCLOCK_33_6	= 7, /* 33.6 MHz */
 };
 
-struct wl12xx_platform_data {
-	void (*set_power)(bool enable);
+struct wl1251_platform_data {
+	int power_gpio;
 	/* SDIO only: IRQ number if WLAN_IRQ line is used, 0 for SDIO IRQs */
 	int irq;
 	bool use_eeprom;
-	int board_ref_clock;
-	int board_tcxo_clock;
-	unsigned long platform_quirks;
-	bool pwr_in_suspend;
 };
-
-/* Platform does not support level trigger interrupts */
-#define WL12XX_PLATFORM_QUIRK_EDGE_IRQ	BIT(0)
 
 #ifdef CONFIG_WILINK_PLATFORM_DATA
 
-int wl12xx_set_platform_data(const struct wl12xx_platform_data *data);
+int wl1251_set_platform_data(const struct wl1251_platform_data *data);
 
-struct wl12xx_platform_data *wl12xx_get_platform_data(void);
+struct wl1251_platform_data *wl1251_get_platform_data(void);
 
 #else
 
 static inline
-int wl12xx_set_platform_data(const struct wl12xx_platform_data *data)
+int wl1251_set_platform_data(const struct wl1251_platform_data *data)
 {
 	return -ENOSYS;
 }
 
 static inline
-struct wl12xx_platform_data *wl12xx_get_platform_data(void)
+struct wl1251_platform_data *wl1251_get_platform_data(void)
 {
 	return ERR_PTR(-ENODATA);
 }

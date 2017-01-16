@@ -193,6 +193,43 @@ struct ieee80211_chanctx_conf {
 };
 
 /**
+ * enum ieee80211_chanctx_switch_mode - channel context switch mode
+ * @CHANCTX_SWMODE_REASSIGN_VIF: Both old and new contexts already
+ *	exist (and will continue to exist), but the virtual interface
+ *	needs to be switched from one to the other.
+ * @CHANCTX_SWMODE_SWAP_CONTEXTS: The old context exists but will stop
+ *      to exist with this call, the new context doesn't exist but
+ *      will be active after this call, the virtual interface switches
+ *      from the old to the new (note that the driver may of course
+ *      implement this as an on-the-fly chandef switch of the existing
+ *      hardware context, but the mac80211 pointer for the old context
+ *      will cease to exist and only the new one will later be used
+ *      for changes/removal.)
+ */
+enum ieee80211_chanctx_switch_mode {
+	CHANCTX_SWMODE_REASSIGN_VIF,
+	CHANCTX_SWMODE_SWAP_CONTEXTS,
+};
+
+/**
+ * struct ieee80211_vif_chanctx_switch - vif chanctx switch information
+ *
+ * This is structure is used to pass information about a vif that
+ * needs to switch from one chanctx to another.  The
+ * &ieee80211_chanctx_switch_mode defines how the switch should be
+ * done.
+ *
+ * @vif: the vif that should be switched from old_ctx to new_ctx
+ * @old_ctx: the old context to which the vif was assigned
+ * @new_ctx: the new context to which the vif must be assigned
+ */
+struct ieee80211_vif_chanctx_switch {
+	struct ieee80211_vif *vif;
+	struct ieee80211_chanctx_conf *old_ctx;
+	struct ieee80211_chanctx_conf *new_ctx;
+};
+
+/**
  * enum ieee80211_bss_change - BSS change notification flags
  *
  * These flags are used with the bss_info_changed() callback
@@ -2470,6 +2507,7 @@ enum ieee80211_roc_type {
  *	This process will continue until sched_scan_stop is called.
  *
  * @sched_scan_stop: Tell the hardware to stop an ongoing scheduled scan.
+ *	In this case, ieee80211_sched_scan_stopped() must not be called.
  *
  * @sw_scan_start: Notifier function that is called just before a software scan
  *	is started. Can be NULL, if the driver doesn't need this notification.
@@ -2729,6 +2767,11 @@ enum ieee80211_roc_type {
  *	to vif. Possible use is for hw queue remapping.
  * @unassign_vif_chanctx: Notifies device driver about channel context being
  *	unbound from vif.
+ * @switch_vif_chanctx: switch a number of vifs from one chanctx to
+ *	another, as specified in the list of
+ *	@ieee80211_vif_chanctx_switch passed to the driver, according
+ *	to the mode defined in &ieee80211_chanctx_switch_mode.
+ *
  * @start_ap: Start operation on the AP interface, this is called after all the
  *	information in bss_conf is set and beacon can be retrieved. A channel
  *	context is bound before this is called. Note that if the driver uses
@@ -2817,7 +2860,7 @@ struct ieee80211_ops {
 				struct ieee80211_vif *vif,
 				struct cfg80211_sched_scan_request *req,
 				struct ieee80211_sched_scan_ies *ies);
-	void (*sched_scan_stop)(struct ieee80211_hw *hw,
+	int (*sched_scan_stop)(struct ieee80211_hw *hw,
 			       struct ieee80211_vif *vif);
 	void (*sw_scan_start)(struct ieee80211_hw *hw);
 	void (*sw_scan_complete)(struct ieee80211_hw *hw);
@@ -2939,6 +2982,10 @@ struct ieee80211_ops {
 	void (*unassign_vif_chanctx)(struct ieee80211_hw *hw,
 				     struct ieee80211_vif *vif,
 				     struct ieee80211_chanctx_conf *ctx);
+	int (*switch_vif_chanctx)(struct ieee80211_hw *hw,
+				  struct ieee80211_vif_chanctx_switch *vifs,
+				  int n_vifs,
+				  enum ieee80211_chanctx_switch_mode mode);
 
 	void (*restart_complete)(struct ieee80211_hw *hw);
 

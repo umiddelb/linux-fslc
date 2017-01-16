@@ -1,0 +1,230 @@
+/*
+ * Copyright (C) 2013,2014 Russell King
+ *
+ * This file is dual-licensed: you can use it either under the terms
+ * of the GPL or the X11 license, at your option. Note that this dual
+ * licensing only applies to this file, and not this project as a
+ * whole.
+ *
+ *  a) This file is free software; you can redistribute it and/or
+ *     modify it under the terms of the GNU General Public License as
+ *     published by the Free Software Foundation; either version 2 of the
+ *     License.
+ *
+ *     This file is distributed in the hope that it will be useful
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ * Or, alternatively
+ *
+ *  b) Permission is hereby granted, free of charge, to any person
+ *     obtaining a copy of this software and associated documentation
+ *     files (the "Software"), to deal in the Software without
+ *     restriction, including without limitation the rights to use
+ *     copy, modify, merge, publish, distribute, sublicense, and/or
+ *     sell copies of the Software, and to permit persons to whom the
+ *     Software is furnished to do so, subject to the following
+ *     conditions:
+ *
+ *     The above copyright notice and this permission notice shall be
+ *     included in all copies or substantial portions of the Software.
+ *
+ *     THE SOFTWARE IS PROVIDED , WITHOUT WARRANTY OF ANY KIND
+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY
+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *     OTHER DEALINGS IN THE SOFTWARE.
+ */
+#include <dt-bindings/gpio/gpio.h>
+/ {
+	clk_sdio: sdio-clock {
+		compatible = "gpio-gate-clock";
+		#clock-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_microsom_tiwl_osc>;
+		enable-gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+	};
+
+	regulators {
+		compatible = "simple-bus";
+
+		reg_tiwl_osc: tiwl-osc-reg {
+			compatible = "regulator-fixed";
+			enable-active-high;
+			gpio = <&gpio5 5 0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_microsom_tiwl_osc>;
+			regulator-name = "tiwl_osc_reg";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			regulator-boot-on;
+		};
+
+		reg_tiwl: tiwl-reg {
+			compatible = "regulator-fixed";
+			enable-active-high;
+			gpio = <&gpio3 19 0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_microsom_tiwl_reg>;
+			regulator-name = "tiwl_reg";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			startup-delay-us = <200000>;
+		};
+	};
+
+	usdhc1_pwrseq: usdhc1_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&gpio5 26 GPIO_ACTIVE_LOW>,
+			      <&gpio6 0 GPIO_ACTIVE_LOW>;
+		clocks = <&clk_sdio>;
+		clock-names = "ext_clock";
+	};
+
+	kim {
+		compatible = "kim";
+		nshutdown_gpio = <160>;  /* GPIO3_IO16 */
+		dev_name = "/dev/ttymxc3";
+		flow_cntrl = <1>;
+		baud_rate = <3000000>;
+		status = "okay";
+	};
+ 
+ 
+	btwilink {
+		compatible = "btwilink";
+		status = "okay";
+	};
+};
+
+&iomuxc {
+	microsom {
+		pinctrl_microsom_tiwl_bt: microsom-tiwl-bt {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_DAT14__GPIO6_IO00	0x40013070
+				MX6QDL_PAD_CSI0_DAT15__GPIO6_IO01	0x40013070
+			>;
+		};
+
+		pinctrl_microsom_tiwl_osc: microsom-tiwl-osc {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05	0x40013070
+			>;
+		};
+
+		pinctrl_microsom_tiwl_reg: microsom-tiwl-reg {
+			fsl,pins = <
+				MX6QDL_PAD_EIM_D19__GPIO3_IO19		0x40013070
+			>;
+		};
+
+		pinctrl_microsom_tiwl_wifi: microsom-tiwl-wifi {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_8__XTALOSC_REF_CLK_32K	0x1b0b0
+				MX6QDL_PAD_CSI0_DATA_EN__GPIO5_IO20	0x40013070
+				MX6QDL_PAD_CSI0_DAT8__GPIO5_IO26	0x40013070
+				MX6QDL_PAD_CSI0_DAT9__GPIO5_IO27	0x40013070
+				MX6QDL_PAD_CSI0_DAT18__GPIO6_IO04	0x40013070
+			>;
+		};
+
+		pinctrl_microsom_uart1: microsom-uart1 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_DAT10__UART1_TX_DATA	0x1b0b1
+				MX6QDL_PAD_CSI0_DAT11__UART1_RX_DATA	0x1b0b1
+			>;
+		};
+
+		pinctrl_microsom_uart4: microsom-uart4 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_DAT12__UART4_TX_DATA 0x1b0b1
+				MX6QDL_PAD_CSI0_DAT13__UART4_RX_DATA 0x1b0b1
+				MX6QDL_PAD_CSI0_DAT16__UART4_RTS_B 0x1b0b1
+				MX6QDL_PAD_CSI0_DAT17__UART4_CTS_B 0x1b0b1
+			>;
+		};
+
+		pinctrl_microsom_usdhc1: microsom-usdhc1 {
+			fsl,pins = <
+				MX6QDL_PAD_SD1_CMD__SD1_CMD    0x17059
+				MX6QDL_PAD_SD1_CLK__SD1_CLK    0x10059
+				MX6QDL_PAD_SD1_DAT0__SD1_DATA0 0x17059
+				MX6QDL_PAD_SD1_DAT1__SD1_DATA1 0x17059
+				MX6QDL_PAD_SD1_DAT2__SD1_DATA2 0x17059
+				MX6QDL_PAD_SD1_DAT3__SD1_DATA3 0x17059
+			>;
+		};
+
+		pinctrl_microsom_usdhc3: microsom-usdhc3 {
+			fsl,pins = <
+				MX6QDL_PAD_SD3_CMD__SD3_CMD    0x17059
+				MX6QDL_PAD_SD3_CLK__SD3_CLK    0x10059
+				MX6QDL_PAD_SD3_DAT0__SD3_DATA0 0x17059
+				MX6QDL_PAD_SD3_DAT1__SD3_DATA1 0x17059
+				MX6QDL_PAD_SD3_DAT2__SD3_DATA2 0x17059
+				MX6QDL_PAD_SD3_DAT3__SD3_DATA3 0x17059
+				MX6QDL_PAD_SD3_DAT4__SD3_DATA4 0x17059
+				MX6QDL_PAD_SD3_DAT5__SD3_DATA5 0x17059
+				MX6QDL_PAD_SD3_DAT6__SD3_DATA6 0x17059
+				MX6QDL_PAD_SD3_DAT7__SD3_DATA7 0x17059
+				MX6QDL_PAD_SD3_RST__SD3_RESET  0x17059
+			>;
+		};
+	};
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_microsom_uart1>;
+	status = "okay";
+};
+
+/* UART4 - Connected to optional BRCM Wifi/BT/FM */
+&uart4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_microsom_uart4>;
+	fsl,uart-has-rtscts;
+	status = "okay";
+};
+
+/* USDHC1 - Connected to optional BRCM Wifi/BT/FM */
+&usdhc1 {
+	card-external-vcc-supply = <&reg_tiwl>;
+	card-reset-gpios = <&gpio5 26 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_microsom_tiwl_wifi &pinctrl_microsom_usdhc1>;
+	bus-width = <4>;
+	keep-power-in-suspend;
+	non-removable;
+	no-1-8-v;
+	vmmc-supply = <&reg_tiwl>;
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	wlcore: wlcore@0 {
+		compatible = "ti,wl1837";
+		reg = <2>;
+		interrupts = <4 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-parent = <&gpio6>;
+		platform-quirks = <0x1>;
+	};
+
+};
+
+&usdhc3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <
+		&pinctrl_microsom_usdhc3
+	>;
+	vmmc-supply = <&reg_3p3v>;
+	bus-width = <8>;
+	non-removable;
+	status = "okay";
+};

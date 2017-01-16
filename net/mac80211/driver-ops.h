@@ -354,16 +354,20 @@ drv_sched_scan_start(struct ieee80211_local *local,
 	return ret;
 }
 
-static inline void drv_sched_scan_stop(struct ieee80211_local *local,
-				       struct ieee80211_sub_if_data *sdata)
+static inline int drv_sched_scan_stop(struct ieee80211_local *local,
+				      struct ieee80211_sub_if_data *sdata)
 {
+	int ret;
+
 	might_sleep();
 
 	check_sdata_in_driver(sdata);
 
 	trace_drv_sched_scan_stop(local, sdata);
-	local->ops->sched_scan_stop(&local->hw, &sdata->vif);
-	trace_drv_return_void(local);
+	ret = local->ops->sched_scan_stop(&local->hw, &sdata->vif);
+	trace_drv_return_int(local, ret);
+
+	return ret;
 }
 
 static inline void drv_sw_scan_start(struct ieee80211_local *local)
@@ -1007,6 +1011,59 @@ static inline void drv_unassign_vif_chanctx(struct ieee80211_local *local,
 						 &ctx->conf);
 	}
 	trace_drv_return_void(local);
+}
+
+static inline int
+drv_switch_vif_chanctx(struct ieee80211_local *local,
+		       struct ieee80211_vif_chanctx_switch *vifs,
+		       int n_vifs,
+		       enum ieee80211_chanctx_switch_mode mode)
+{
+	int ret = 0;
+	int i;
+
+	if (!local->ops->switch_vif_chanctx)
+		return -EOPNOTSUPP;
+
+	for (i = 0; i < n_vifs; i++) {
+		struct ieee80211_chanctx *new_ctx =
+			container_of(vifs[i].new_ctx,
+				     struct ieee80211_chanctx,
+				     conf);
+		struct ieee80211_chanctx *old_ctx =
+			container_of(vifs[i].old_ctx,
+				     struct ieee80211_chanctx,
+				     conf);
+
+		WARN_ON_ONCE(!old_ctx->driver_present);
+		WARN_ON_ONCE((mode == CHANCTX_SWMODE_SWAP_CONTEXTS &&
+			      new_ctx->driver_present) ||
+			     (mode == CHANCTX_SWMODE_REASSIGN_VIF &&
+			      !new_ctx->driver_present));
+	}
+
+	trace_drv_switch_vif_chanctx(local, vifs, n_vifs, mode);
+	ret = local->ops->switch_vif_chanctx(&local->hw,
+					     vifs, n_vifs, mode);
+	trace_drv_return_int(local, ret);
+
+	if (!ret && mode == CHANCTX_SWMODE_SWAP_CONTEXTS) {
+		for (i = 0; i < n_vifs; i++) {
+			struct ieee80211_chanctx *new_ctx =
+				container_of(vifs[i].new_ctx,
+					     struct ieee80211_chanctx,
+					     conf);
+			struct ieee80211_chanctx *old_ctx =
+				container_of(vifs[i].old_ctx,
+					     struct ieee80211_chanctx,
+					     conf);
+
+			new_ctx->driver_present = true;
+			old_ctx->driver_present = false;
+		}
+	}
+
+	return ret;
 }
 
 static inline int drv_start_ap(struct ieee80211_local *local,

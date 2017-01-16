@@ -155,8 +155,11 @@ dtb-$(CONFIG_ARCH_MXC) += \
 	imx53-smd.dtb \
 	imx6dl-cm-fx6.dtb \
 	imx6dl-cubox-i.dtb \
+	imx6dl-cubox-i-som-v15.dtb \
 	imx6dl-hummingboard.dtb \
+	imx6dl-hummingboard-som-v15.dtb \
 	imx6dl-hummingboard2.dtb \
+	imx6dl-hummingboard2-som-v15.dtb \
 	imx6dl-sabreauto.dtb \
 	imx6dl-sabreauto-flexcan1.dtb \
 	imx6dl-sabreauto-ecspi.dtb \
@@ -172,10 +175,14 @@ dtb-$(CONFIG_ARCH_MXC) += \
 	imx6dl-wandboard.dtb \
 	imx6q-arm2.dtb \
 	imx6q-auvidea.dtb \
+	imx6q-auvidea-som-v15.dtb \
 	imx6q-cm-fx6.dtb \
 	imx6q-cubox-i.dtb \
+	imx6q-cubox-i-som-v15.dtb \
 	imx6q-hummingboard.dtb \
+	imx6q-hummingboard-som-v15.dtb \
 	imx6q-hummingboard2.dtb \
+	imx6q-hummingboard2-som-v15.dtb \
 	imx6q-phytec-pbab01.dtb \
 	imx6q-sabreauto.dtb \
 	imx6q-sabreauto-flexcan1.dtb \

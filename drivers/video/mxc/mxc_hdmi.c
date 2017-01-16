@@ -2004,7 +2004,7 @@ static void  mxc_hdmi_default_modelist(struct mxc_hdmi *hdmi)
 	/*Add all no interlaced CEA mode to default modelist */
 	for (i = 0; i < ARRAY_SIZE(mxc_cea_mode); i++) {
 		mode = mxc_cea_mode[i];
-		if (mode.xres != 0) {
+		if (!(mode.vmode & FB_VMODE_INTERLACED) && (mode.xres != 0)) {
 			if (ignore_edid)
 				mode.flag |= FB_MODE_IS_STANDARD;
 			fb_add_videomode(&mode, &hdmi->fbi->modelist);
